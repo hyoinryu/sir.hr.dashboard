@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HR 인사이트 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #0D1117; color: #E6EDF3; min-height: 100vh; }
+
+    /* NAV */
+    .nav { background: rgba(22,27,34,0.97); border-bottom: 1px solid #21262D; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg,#00D4AA,#74B9FF); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: #0D1117; }
+    .nav-title { font-weight: 700; font-size: 16px; }
+    .nav-badge { background: #21262D; border-radius: 20px; padding: 2px 10px; font-size: 11px; color: #8B949E; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .tab-btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; background: transparent; color: #8B949E; font-family: inherit; transition: all 0.2s; }
+    .tab-btn.active { background: #00D4AA22; color: #00D4AA; }
+    .upload-btn { display: flex; align-items: center; gap: 8px; background: #00D4AA; color: #0D1117; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; }
+
+    /* MAIN */
+    .main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+    /* DROPZONE */
+    .dropzone { border: 2px dashed #30363D; border-radius: 12px; padding: 16px 24px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; }
+    .dropzone.drag { border-color: #00D4AA; background: #00D4AA0A; }
+    .dropzone-title { font-weight: 600; font-size: 13px; color: #8B949E; }
+    .dropzone-sub { font-size: 11px; color: #6E7681; margin-top: 3px; }
+    .sheet-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sheet-tag { font-size: 10px; background: #00D4AA22; color: #00D4AA; border-radius: 6px; padding: 3px 8px; font-weight: 700; }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: #161B22; border: 1px solid #21262D; border-radius: 12px; padding: 20px 22px; position: relative; overflow: hidden; }
+    .kpi-bg { position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 0 12px 0 80px; }
+    .kpi-icon { font-size: 22px; margin-bottom: 8px; }
+    .kpi-value { font-size: 26px; font-weight: 800; }
+    .kpi-label { font-size: 12px; color: #8B949E; margin-top: 4px; }
+    .kpi-sub { font-size: 11px; color: #6E7681; margin-top: 6px; border-top: 1px solid #21262D; padding-top: 8px; }
+
+    /* CARDS */
+    .card { background: #161B22; border: 1px solid #21262D; border-radius: 12px; padding: 22px 24px; }
+    .card-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .card-sub { color: #8B949E; font-size: 12px; margin-bottom: 16px; }
+
+    /* GRIDS */
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 16px; }
+
+    /* CHART WRAP */
+    .chart-wrap { position: relative; }
+
+    /* DEPT LIST */
+    .dept-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 8px; }
+    .dept-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .dept-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .dept-name { color: #8B949E; }
+    .dept-val { margin-left: auto; font-weight: 700; }
+
+    /* PIPELINE */
+    .pipeline-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 100px; gap: 8px; padding: 8px 12px; background: #0D1117; border-radius: 8px; margin-bottom: 10px; font-size: 11px; font-weight: 700; color: #8B949E; }
+    .pipeline-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 100px; gap: 8px; padding: 14px 12px; border-bottom: 1px solid #21262D; align-items: center; border-radius: 6px; }
+    .pipeline-row:last-child { border-bottom: none; }
+    .stage-bubble { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 700; font-size: 13px; }
+    .status-tag { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
+    .urgent-tag { font-size: 9px; background: #FF6B6B22; color: #FF6B6B; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+    .progress-bar { background: #21262D; border-radius: 4px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; }
+
+    /* BUDGET BARS */
+    .budget-item { margin-bottom: 14px; }
+    .budget-header { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
+    .budget-bar { background: #21262D; border-radius: 4px; height: 8px; overflow: hidden; }
+    .budget-fill { height: 100%; border-radius: 4px; transition: width 0.6s; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #1C2128; border: 1px solid #30363D; border-radius: 10px; padding: 12px 24px; font-size: 13px; font-weight: 600; z-index: 9999; box-shadow: 0 8px 32px #0008; display: none; white-space: nowrap; }
+
+    /* TAB CONTENT */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* STAT CARDS */
+    .stat-card { background: #161B22; border: 1px solid #21262D; border-radius: 12px; padding: 18px 20px; }
+    .stat-icon { font-size: 20px; margin-bottom: 8px; }
+    .stat-value { font-size: 22px; font-weight: 800; }
+    .stat-label { font-size: 12px; color: #8B949E; margin-top: 4px; }
+
+    /* FLEX COL */
+    .flex-col { display: flex; flex-direction: column; gap: 16px; }
+
+    input[type=file] { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">H</div>
+    <span class="nav-title">HR 인사이트</span>
+    <span class="nav-badge" id="quarter-badge">2025 · 2분기</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('overview')">개요</button>
+    <button class="tab-btn" onclick="switchTab('headcount')">인원 현황</button>
+    <button class="tab-btn" onclick="switchTab('pipeline')">채용 파이프라인</button>
+    <button class="tab-btn" onclick="switchTab('budget')">인건비 현황</button>
+  </div>
+  <label class="upload-btn">
+    📂 엑셀 업로드
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/>
+  </label>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- DROPZONE -->
+  <div class="dropzone" id="dropzone">
+    <div>
+      <div class="dropzone-title" id="dropzone-title">📎 엑셀 파일을 여기에 드래그하거나 우측 상단 버튼으로 업로드하세요</div>
+      <div class="dropzone-sub">시트명: 인원현황 · 부서현황 · 채용파이프라인 · 인건비 · 인건비항목</div>
+    </div>
+    <div class="sheet-tags" id="sheet-tags"></div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="grid-2-1">
+      <div class="card">
+        <div class="card-title">인원 변동 추이</div>
+        <div class="card-sub">월별 총 직원수 · 입퇴사 현황</div>
+        <div class="chart-wrap"><canvas id="headcountChart" height="200"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">부서별 인원</div>
+        <div class="card-sub" id="dept-total">전체 384명</div>
+        <div class="chart-wrap"><canvas id="deptChart" height="180"></canvas></div>
+        <div class="dept-list" id="dept-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADCOUNT -->
+  <div class="tab-content" id="tab-headcount">
+    <div class="grid-1-1">
+      <div class="card">
+        <div class="card-title">월별 입퇴사 현황</div>
+        <div class="card-sub">상반기 추이</div>
+        <canvas id="joinLeaveChart" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">부서별 인원 분포</div>
+        <div class="card-sub" id="headcount-dept-total">전체 384명</div>
+        <div id="dept-bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="tab-content" id="tab-pipeline">
+    <div class="flex-col">
+      <div class="grid-4" id="pipeline-stats"></div>
+      <div class="card">
+        <div class="card-title">포지션별 채용 파이프라인</div>
+        <div class="card-sub">단계별 후보자 진행 현황</div>
+        <div class="pipeline-header">
+          <div>포지션</div>
+          <div style="text-align:center">서류</div>
+          <div style="text-align:center">1차면접</div>
+          <div style="text-align:center">2차면접</div>
+          <div style="text-align:center">최종</div>
+          <div style="text-align:center">상태</div>
+          <div style="text-align:center">진행률</div>
+        </div>
+        <div id="pipeline-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUDGET -->
+  <div class="tab-content" id="tab-budget">
+    <div class="flex-col">
+      <div class="grid-4" id="budget-stats"></div>
+      <div class="card">
+        <div class="card-title">월별 인건비 예산 vs 실적</div>
+        <div class="card-sub">단위: 만원</div>
+        <canvas id="budgetChart" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">항목별 인건비 현황</div>
+        <div class="card-sub">단위: 만원</div>
+        <div id="budget-breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 샘플 데이터 ──────────────────────────────────────────
+let headcount = [
+  { month:"1월", total:342, join:18, leave:8 },
+  { month:"2월", total:352, join:15, leave:5 },
+  { month:"3월", total:361, join:20, leave:11 },
+  { month:"4월", total:370, join:14, leave:5 },
+  { month:"5월", total:378, join:12, leave:4 },
+  { month:"6월", total:384, join:9,  leave:3 },
+];
+let deptData = [
+  { name:"개발",  value:120, color:"#00D4AA" },
+  { name:"영업",  value:85,  color:"#FF6B6B" },
+  { name:"마케팅", value:62, color:"#FFD166" },
+  { name:"HR",    value:38,  color:"#74B9FF" },
+  { name:"재무",  value:45,  color:"#A29BFE" },
+  { name:"운영",  value:34,  color:"#FD79A8" },
+];
+let pipeline = [
+  { position:"시니어 개발자", total:3, s1:3, s2:2, s3:1, s4:0, status:"진행중",  urgent:true  },
+  { position:"마케팅 매니저", total:1, s1:1, s2:1, s3:1, s4:1, status:"최종단계", urgent:false },
+  { position:"재무 분석가",  total:2, s1:2, s2:2, s3:0, s4:0, status:"진행중",  urgent:false },
+  { position:"영업 팀장",   total:1, s1:1, s2:0, s3:0, s4:0, status:"초기단계", urgent:true  },
+  { position:"UX 디자이너", total:2, s1:2, s2:2, s3:2, s4:0, status:"심사중",  urgent:false },
+];
+let budget = [
+  { month:"1월", budget:4200, actual:4050 },
+  { month:"2월", budget:4200, actual:4100 },
+  { month:"3월", budget:4300, actual:4280 },
+  { month:"4월", budget:4300, actual:4350 },
+  { month:"5월", budget:4500, actual:4420 },
+  { month:"6월", budget:4500, actual:4510 },
+];
+let breakdown = [
+  { label:"기본급",  budget:3200, actual:3180, color:"#00D4AA" },
+  { label:"성과급",  budget:600,  actual:650,  color:"#FFD166" },
+  { label:"복리후생", budget:400,  actual:390,  color:"#74B9FF" },
+  { label:"교육훈련", budget:300,  actual:290,  color:"#A29BFE" },
+];
+
+const DEPT_COLORS = ["#00D4AA","#FF6B6B","#FFD166","#74B9FF","#A29BFE","#FD79A8","#55EFC4","#FDCB6E"];
+const stageColors  = ["#74B9FF","#A29BFE","#FFD166","#00D4AA"];
+const statusColors = { "진행중":"#74B9FF","최종단계":"#00D4AA","초기단계":"#8B949E","심사중":"#FFD166" };
+
+// ── 차트 인스턴스 ────────────────────────────────────────
+let charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ── KPI ─────────────────────────────────────────────────
+function renderKPI() {
+  const last = headcount[headcount.length-1] || {total:0,join:0,leave:0};
+  const prev = headcount[headcount.length-2] || {total:0};
+  const diff = last.total - prev.total;
+  const turnover = last.total > 0 ? ((last.leave/last.total)*100).toFixed(1) : "0.0";
+  const lb = budget[budget.length-1] || {budget:1,actual:0};
+  const br = ((lb.actual/lb.budget)*100).toFixed(1);
+
+  const kpis = [
+    { label:"총 직원수",       value:`${last.total}명`,   sub:`전월 대비 ${diff>=0?"+":""}${diff}`, icon:"👥", color:"#00D4AA" },
+    { label:"이번달 신규 입사", value:`${last.join}명`,    sub:"목표 대비 75%",                     icon:"🟢", color:"#74B9FF" },
+    { label:"이직률",          value:`${turnover}%`,      sub:"업계 평균 3.8%",                    icon:"📉", color:"#A29BFE" },
+    { label:"예산 집행률",     value:`${br}%`,            sub:br>100?"⚠️ 초과":"✅ 정상",           icon:"📊", color:br>100?"#FF6B6B":"#FFD166" },
+  ];
+  document.getElementById("kpi-grid").innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-bg" style="background:${k.color}0E"></div>
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join("");
+}
+
+// ── 인원 변동 추이 차트 ──────────────────────────────────
+function renderHeadcountChart() {
+  destroyChart("headcount");
+  const ctx = document.getElementById("headcountChart").getContext("2d");
+  charts.headcount = new Chart(ctx, {
+    data: {
+      labels: headcount.map(d => d.month),
+      datasets: [
+        { type:"line", label:"직원수", data:headcount.map(d=>d.total), borderColor:"#74B9FF", backgroundColor:"#74B9FF22", fill:true, tension:0.4, pointBackgroundColor:"#74B9FF", pointRadius:4, yAxisID:"y1" },
+        { type:"bar",  label:"입사",   data:headcount.map(d=>d.join),  backgroundColor:"#00D4AA", borderRadius:4, yAxisID:"y2" },
+        { type:"bar",  label:"퇴사",   data:headcount.map(d=>d.leave), backgroundColor:"#FF6B6B", borderRadius:4, yAxisID:"y2" },
+      ]
+    },
+    options: {
+      responsive:true, interaction:{mode:"index"},
+      plugins:{ legend:{ labels:{ color:"#8B949E", font:{size:11} } } },
+      scales:{
+        x:{ ticks:{color:"#8B949E"}, grid:{color:"#21262D"} },
+        y1:{ position:"left",  ticks:{color:"#8B949E"}, grid:{color:"#21262D"} },
+        y2:{ position:"right", ticks:{color:"#8B949E"}, grid:{display:false} },
+      }
+    }
+  });
+}
+
+// ── 부서별 파이 차트 ─────────────────────────────────────
+function renderDeptChart() {
+  destroyChart("dept");
+  const total = deptData.reduce((s,d)=>s+d.value,0);
+  document.getElementById("dept-total").textContent = `전체 ${total}명`;
+  document.getElementById("headcount-dept-total").textContent = `전체 ${total}명`;
+
+  const ctx = document.getElementById("deptChart").getContext("2d");
+  charts.dept = new Chart(ctx, {
+    type:"doughnut",
+    data:{ labels:deptData.map(d=>d.name), datasets:[{ data:deptData.map(d=>d.value), backgroundColor:deptData.map(d=>d.color), borderWidth:0, hoverOffset:4 }] },
+    options:{ responsive:true, cutout:"60%", plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.raw}명` } } } }
+  });
+
+  document.getElementById("dept-legend").innerHTML = deptData.map(d=>`
+    <div class="dept-item">
+      <div class="dept-dot" style="background:${d.color}"></div>
+      <span class="dept-name">${d.name}</span>
+      <span class="dept-val">${d.value}</span>
+    </div>
+  `).join("");
+
+  // 부서 막대 (headcount 탭)
+  const totalEmp = deptData.reduce((s,d)=>s+d.value,0);
+  document.getElementById("dept-bars").innerHTML = deptData.map(d=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:600">${d.name}</span>
+        <span style="font-size:13px;font-weight:700;color:${d.color}">${d.value}명</span>
+      </div>
+      <div style="background:#21262D;border-radius:4px;height:8px">
+        <div style="width:${(d.value/totalEmp*100)}%;height:100%;background:${d.color};border-radius:4px"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ── 입퇴사 바 차트 ───────────────────────────────────────
+function renderJoinLeaveChart() {
+  destroyChart("joinLeave");
+  const ctx = document.getElementById("joinLeaveChart").getContext("2d");
+  charts.joinLeave = new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: headcount.map(d=>d.month),
+      datasets:[
+        { label:"입사", data:headcount.map(d=>d.join),  backgroundColor:"#00D4AA", borderRadius:4 },
+        { label:"퇴사", data:headcount.map(d=>d.leave), backgroundColor:"#FF6B6B", borderRadius:4 },
+      ]
+    },
+    options:{ responsive:true, plugins:{ legend:{ labels:{ color:"#8B949E" } } }, scales:{ x:{ticks:{color:"#8B949E"},grid:{color:"#21262D"}}, y:{ticks:{color:"#8B949E"},grid:{color:"#21262D"}} } }
+  });
+}
+
+// ── 채용 파이프라인 ──────────────────────────────────────
+function renderPipeline() {
+  const urgent = pipeline.filter(d=>d.urgent).length;
+  const total  = pipeline.reduce((s,d)=>s+d.total,0);
+  document.getElementById("pipeline-stats").innerHTML = [
+    { label:"오픈 포지션",    value:`${total}개`,  color:"#74B9FF", icon:"📋" },
+    { label:"긴급 채용",     value:`${urgent}건`, color:"#FF6B6B", icon:"🚨" },
+    { label:"이번달 목표",    value:"5명",         color:"#FFD166", icon:"🎯" },
+    { label:"평균 채용 기간", value:"32일",        color:"#00D4AA", icon:"⏳" },
+  ].map(s=>`
+    <div class="stat-card">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-value" style="color:${s.color}">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join("");
+
+  document.getElementById("pipeline-table").innerHTML = pipeline.map((row,i) => {
+    const stages = [row.s1,row.s2,row.s3,row.s4];
+    const maxS = row.s4>0?4:row.s3>0?3:row.s2>0?2:1;
+    const prog = Math.round((maxS/4)*100);
+    const sc = statusColors[row.status]||"#8B949E";
+    const stagesHTML = stages.map((v,si)=>`
+      <div style="text-align:center">
+        <div class="stage-bubble" style="background:${v>0?stageColors[si]+"22":"#21262D"};color:${v>0?stageColors[si]:"#6E7681"}">${v}</div>
+      </div>
+    `).join("");
+    return `
+      <div class="pipeline-row" style="background:${row.urgent?"#FF6B6B08":"transparent"};border-bottom:${i<pipeline.length-1?"1px solid #21262D":"none"}">
+        <div>
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+            ${row.urgent?'<span class="urgent-tag">긴급</span>':""}
+            ${row.position}
+          </div>
+          <div style="font-size:10px;color:#8B949E;margin-top:2px">총 ${row.total}명 채용 목표</div>
+        </div>
+        ${stagesHTML}
+        <div style="text-align:center">
+          <span class="status-tag" style="background:${sc}22;color:${sc}">${row.status}</span>
+        </div>
+        <div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${prog}%;background:${prog===100?"#00D4AA":prog>=75?"#FFD166":"#74B9FF"}"></div>
+          </div>
+          <div style="font-size:10px;color:#8B949E;margin-top:4px;text-align:right">${prog}%</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── 인건비 ───────────────────────────────────────────────
+function renderBudget() {
+  const lb = budget[budget.length-1]||{budget:1,actual:0};
+  const br = ((lb.actual/lb.budget)*100).toFixed(1);
+  document.getElementById("budget-stats").innerHTML = [
+    { label:"최근월 예산",  value:`${lb.budget.toLocaleString()}만원`, color:"#74B9FF", icon:"📊" },
+    { label:"최근월 실적",  value:`${lb.actual.toLocaleString()}만원`, color:br>100?"#FF6B6B":"#00D4AA", icon:"💰" },
+    { label:"예산 집행률", value:`${br}%`,                            color:br>100?"#FF6B6B":"#00D4AA", icon:"📈" },
+    { label:"인건비 항목", value:`${breakdown.length}개`,             color:"#A29BFE", icon:"🏦" },
+  ].map(s=>`
+    <div class="stat-card">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-value" style="color:${s.color}">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join("");
+
+  destroyChart("budget");
+  const ctx = document.getElementById("budgetChart").getContext("2d");
+  charts.budget = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels: budget.map(d=>d.month),
+      datasets:[
+        { label:"예산", data:budget.map(d=>d.budget), borderColor:"#74B9FF", borderDash:[6,3], pointBackgroundColor:"#74B9FF", pointRadius:4, tension:0.3, fill:false },
+        { label:"실적", data:budget.map(d=>d.actual), borderColor:"#FF6B6B", pointBackgroundColor:"#FF6B6B", pointRadius:4, tension:0.3, fill:false },
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ labels:{ color:"#8B949E" } }, tooltip:{ callbacks:{ label: c=>`${c.dataset.label}: ${c.raw.toLocaleString()}만원` } } },
+      scales:{ x:{ticks:{color:"#8B949E"},grid:{color:"#21262D"}}, y:{ticks:{color:"#8B949E",callback:v=>v.toLocaleString()},grid:{color:"#21262D"}} }
+    }
+  });
+
+  document.getElementById("budget-breakdown").innerHTML = breakdown.map(b=>{
+    const rate = ((b.actual/b.budget)*100).toFixed(1);
+    const over = b.actual>b.budget;
+    return `
+      <div class="budget-item">
+        <div class="budget-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:10px;height:10px;border-radius:2px;background:${b.color}"></div>
+            <span style="font-size:13px;font-weight:600">${b.label}</span>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px">
+            <span style="color:#8B949E">예산 ${b.budget.toLocaleString()}</span>
+            <span style="color:${over?"#FF6B6B":"#00D4AA"};font-weight:700">실적 ${b.actual.toLocaleString()}</span>
+            <span style="color:${over?"#FF6B6B":"#00D4AA"};font-weight:700">${rate}%</span>
+          </div>
+        </div>
+        <div class="budget-bar">
+          <div class="budget-fill" style="width:${Math.min(rate,110)}%;background:${over?"#FF6B6B":b.color}"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── 전체 렌더 ────────────────────────────────────────────
+function renderAll() {
+  renderKPI();
+  renderHeadcountChart();
+  renderDeptChart();
+  renderJoinLeaveChart();
+  renderPipeline();
+  renderBudget();
+}
+
+// ── 탭 전환 ──────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+  event.target.classList.add("active");
+}
+
+// ── 엑셀 업로드 ──────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.display = "block";
+  setTimeout(()=>{ el.style.display="none"; }, 3500);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:"array" });
+      const loaded = [];
+
+      function getSheet(name) {
+        const ws = wb.Sheets[name];
+        return ws ? XLSX.utils.sheet_to_json(ws) : null;
+      }
+
+      const hc = getSheet("인원현황");
+      if (hc) {
+        headcount = hc.map(r=>({ month:String(r["월"]||r["month"]||""), total:Number(r["직원수"]||r["total"]||0), join:Number(r["입사"]||r["join"]||0), leave:Number(r["퇴사"]||r["leave"]||0) }));
+        loaded.push("인원현황");
+      }
+      const dp = getSheet("부서현황");
+      if (dp) {
+        deptData = dp.map((r,i)=>({ name:String(r["부서"]||r["name"]||""), value:Number(r["인원"]||r["value"]||0), color:DEPT_COLORS[i%DEPT_COLORS.length] }));
+        loaded.push("부서현황");
+      }
+      const pl = getSheet("채용파이프라인");
+      if (pl) {
+        pipeline = pl.map(r=>({ position:String(r["포지션"]||r["position"]||""), total:Number(r["채용목표"]||r["total"]||0), s1:Number(r["서류"]||r["s1"]||0), s2:Number(r["1차면접"]||r["s2"]||0), s3:Number(r["2차면접"]||r["s3"]||0), s4:Number(r["최종"]||r["s4"]||0), status:String(r["상태"]||r["status"]||"진행중"), urgent:String(r["긴급"]||"").toLowerCase()==="true"||r["긴급"]===1 }));
+        loaded.push("채용파이프라인");
+      }
+      const bd = getSheet("인건비");
+      if (bd) {
+        budget = bd.map(r=>({ month:String(r["월"]||r["month"]||""), budget:Number(r["예산"]||r["budget"]||0), actual:Number(r["실적"]||r["actual"]||0) }));
+        loaded.push("인건비");
+      }
+      const bk = getSheet("인건비항목");
+      if (bk) {
+        breakdown = bk.map((r,i)=>({ label:String(r["항목"]||r["label"]||""), budget:Number(r["예산"]||r["budget"]||0), actual:Number(r["실적"]||r["actual"]||0), color:DEPT_COLORS[i%DEPT_COLORS.length] }));
+        loaded.push("인건비항목");
+      }
+
+      if (loaded.length === 0) {
+        showToast("❌ 시트 이름을 확인해주세요");
+      } else {
+        document.getElementById("sheet-tags").innerHTML = loaded.map(s=>`<span class="sheet-tag">✓ ${s}</span>`).join("");
+        showToast(`✅ ${loaded.join(", ")} 반영 완료!`);
+        renderAll();
+      }
+    } catch(err) {
+      showToast("❌ 파일 읽기 오류가 발생했어요");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById("fileInput").addEventListener("change", e => {
+  if (e.target.files[0]) processFile(e.target.files[0]);
+});
+
+const dz = document.getElementById("dropzone");
+dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+dz.addEventListener("drop", e => {
+  e.preventDefault(); dz.classList.remove("drag");
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
+
+// ── 초기 렌더 ────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
