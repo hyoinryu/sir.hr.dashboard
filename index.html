@@ -3,412 +3,737 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HR 인사이트 대시보드</title>
+  <title>설로인 HR 대시보드</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Noto Sans KR',sans-serif;background:#F5F6FA;color:#1A1A2E;display:flex;min-height:100vh}
-
-    /* 사이드바 */
-    .sidebar{width:160px;background:#fff;border-right:1px solid #E8EAF0;display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;height:100vh;z-index:100}
-    .sb-logo{padding:0 20px 24px;border-bottom:1px solid #E8EAF0}
-    .sb-logo-title{font-size:13px;font-weight:700;color:#1A1A2E;line-height:1.4}
-    .sb-logo-sub{font-size:10px;color:#9CA3AF;margin-top:2px}
-    .sb-nav{padding:16px 0;flex:1}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;font-weight:500;color:#6B7280;cursor:pointer;border-left:3px solid transparent;transition:all .2s}
-    .nav-item:hover{background:#F5F6FA;color:#1A1A2E}
-    .nav-item.active{background:#EEF2FF;color:#4F46E5;border-left-color:#4F46E5;font-weight:600}
-
-    /* 메인 */
-    .main{margin-left:160px;flex:1;padding:28px 32px;min-width:0}
-
-    /* 헤더 */
-    .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
-    .page-title{font-size:20px;font-weight:700;color:#1A1A2E}
-    .page-sub{font-size:12px;color:#9CA3AF;margin-top:4px}
-    .header-right{display:flex;gap:8px;align-items:center}
-    .filter-select{padding:6px 28px 6px 10px;border:1px solid #E5E7EB;border-radius:6px;font-size:12px;font-family:inherit;color:#374151;background:#fff;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-    .upload-btn{display:flex;align-items:center;gap:6px;background:#4F46E5;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+    body{font-family:'Noto Sans KR',sans-serif;background:#F5F6FA;color:#1A1A2E;min-height:100vh}
     input[type=file]{display:none}
 
-    /* KPI */
-    .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
-    .kpi-card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:16px 18px}
-    .kpi-label{font-size:11px;color:#9CA3AF;margin-bottom:6px;font-weight:500}
-    .kpi-value{font-size:28px;font-weight:800;color:#1A1A2E;line-height:1}
-    .kpi-value.danger{color:#EF4444}
-    .kpi-sub{font-size:11px;color:#9CA3AF;margin-top:6px}
+    /* ── 비밀번호 화면 ── */
+    #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+    .login-box{background:#fff;border-radius:20px;padding:48px 40px;width:380px;box-shadow:0 20px 60px #0002;text-align:center}
+    .login-logo{width:52px;height:52px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin:0 auto 20px}
+    .login-title{font-size:20px;font-weight:800;color:#1A1A2E;margin-bottom:6px}
+    .login-sub{font-size:13px;color:#9CA3AF;margin-bottom:32px}
+    .login-input-wrap{position:relative;margin-bottom:12px}
+    .login-input{width:100%;padding:13px 16px 13px 44px;border:1.5px solid #E5E7EB;border-radius:10px;font-size:14px;font-family:inherit;color:#1A1A2E;outline:none;transition:border .2s}
+    .login-input:focus{border-color:#667eea}
+    .login-input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;color:#9CA3AF}
+    .login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;transition:opacity .2s}
+    .login-btn:hover{opacity:.9}
+    .login-error{font-size:12px;color:#EF4444;margin-top:8px;display:none}
+    .login-footer{font-size:11px;color:#D1D5DB;margin-top:28px}
 
-    /* 카드 */
-    .card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:20px 22px}
-    .card-title{font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:3px}
-    .card-sub{font-size:11px;color:#9CA3AF;margin-bottom:16px}
+    /* ── 앱 레이아웃 ── */
+    #app{display:none;min-height:100vh;flex-direction:row}
+    #app.visible{display:flex}
 
-    /* 그리드 */
-    .grid-2-1{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px}
-    .grid-1-1{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-    .flex-col{display:flex;flex-direction:column;gap:14px}
+    /* ── 사이드바 ── */
+    .sidebar{width:200px;background:#fff;border-right:1px solid #E8EAF0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+    .sb-logo{padding:20px 20px 16px;border-bottom:1px solid #F3F4F6}
+    .sb-brand{display:flex;align-items:center;gap:10px}
+    .sb-icon{width:34px;height:34px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+    .sb-title{font-size:13px;font-weight:700;color:#1A1A2E;line-height:1.3}
+    .sb-sub{font-size:10px;color:#9CA3AF;margin-top:1px}
+    .sb-nav{padding:12px 0;flex:1;overflow-y:auto}
+    .nav-section{padding:8px 16px 4px;font-size:10px;font-weight:700;color:#C4C9D4;letter-spacing:.5px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:500;color:#6B7280;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+    .nav-item:hover{background:#F9FAFB;color:#1A1A2E}
+    .nav-item.active{background:#F0EEFF;color:#667eea;border-left-color:#667eea;font-weight:600}
+    .nav-item .ni{font-size:15px;flex-shrink:0}
+    .sb-footer{padding:16px;border-top:1px solid #F3F4F6}
+    .sb-upload{width:100%;padding:9px;background:#667eea;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 
-    /* 드롭존 */
-    .dropzone{border:1.5px dashed #D1D5DB;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;background:#fff;transition:all .2s}
-    .dropzone.drag{border-color:#4F46E5;background:#EEF2FF}
-    .dz-title{font-size:12px;color:#6B7280;font-weight:500}
+    /* ── 메인 ── */
+    .main{margin-left:200px;flex:1;padding:24px 28px;min-width:0}
+    .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+    .page-title{font-size:19px;font-weight:700;color:#1A1A2E}
+    .page-sub{font-size:12px;color:#9CA3AF;margin-top:3px}
+    .header-right{display:flex;gap:8px;align-items:center}
+    .filter-select{padding:6px 26px 6px 10px;border:1px solid #E5E7EB;border-radius:7px;font-size:12px;font-family:inherit;color:#374151;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer}
+
+    /* ── 드롭존 ── */
+    .dropzone{border:1.5px dashed #D1D5DB;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;background:#fff;transition:all .2s;cursor:default}
+    .dropzone.drag{border-color:#667eea;background:#F0EEFF}
+    .dz-title{font-size:11px;color:#6B7280;font-weight:500}
     .dz-sub{font-size:10px;color:#9CA3AF;margin-top:2px}
     .sheet-tags{display:flex;gap:5px;flex-wrap:wrap}
-    .sheet-tag{font-size:10px;background:#EEF2FF;color:#4F46E5;border-radius:5px;padding:2px 7px;font-weight:600}
+    .sheet-tag{font-size:10px;background:#F0EEFF;color:#667eea;border-radius:5px;padding:2px 7px;font-weight:600}
 
-    /* 병목 */
-    .bn-item{margin-bottom:12px}
-    .bn-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-    .bn-label{font-size:12px;font-weight:600;color:#374151;display:flex;align-items:center;gap:6px}
-    .bn-alert{font-size:10px;color:#EF4444}
-    .bn-values{font-size:11px;color:#9CA3AF}
-    .bn-track{background:#F3F4F6;border-radius:4px;height:7px;overflow:hidden}
-    .bn-fill{height:100%;border-radius:4px}
+    /* ── KPI 카드 ── */
+    .kpi-grid{display:grid;gap:12px;margin-bottom:16px}
+    .kpi-5{grid-template-columns:repeat(5,1fr)}
+    .kpi-4{grid-template-columns:repeat(4,1fr)}
+    .kpi-3{grid-template-columns:repeat(3,1fr)}
+    .kpi-card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+    .kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:10px 0 0 10px}
+    .kpi-label{font-size:11px;color:#9CA3AF;margin-bottom:5px;font-weight:500}
+    .kpi-value{font-size:24px;font-weight:800;color:#1A1A2E;line-height:1}
+    .kpi-value.accent{color:#667eea}
+    .kpi-value.green{color:#10B981}
+    .kpi-value.red{color:#EF4444}
+    .kpi-value.orange{color:#F59E0B}
+    .kpi-sub{font-size:11px;color:#9CA3AF;margin-top:5px}
+    .kpi-badge{display:inline-block;font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;margin-top:4px}
 
-    /* 파이프라인 */
-    .tbl-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px;gap:8px;padding:8px 12px;background:#F9FAFB;border-radius:8px;margin-bottom:8px;font-size:11px;font-weight:600;color:#9CA3AF}
-    .tbl-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px;gap:8px;padding:12px;border-bottom:1px solid #F3F4F6;align-items:center;border-radius:6px}
-    .tbl-row:last-child{border-bottom:none}
-    .stage-bub{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:700;font-size:12px}
-    .status-tag{font-size:10px;font-weight:600;border-radius:5px;padding:2px 7px}
-    .urgent-tag{font-size:9px;background:#FEE2E2;color:#EF4444;border-radius:4px;padding:1px 5px;font-weight:700}
-    .prog-track{background:#F3F4F6;border-radius:4px;height:5px;overflow:hidden}
-    .prog-fill{height:100%;border-radius:4px}
+    /* ── 섹션 카드 ── */
+    .card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:18px 20px}
+    .card-title{font-size:13px;font-weight:700;color:#1A1A2E;margin-bottom:2px}
+    .card-sub{font-size:11px;color:#9CA3AF;margin-bottom:14px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+    .grid-6-4{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
+    .flex-col{display:flex;flex-direction:column;gap:14px}
+    .mb14{margin-bottom:14px}
 
-    /* 부서 막대 */
-    .db-item{margin-bottom:10px}
-    .db-header{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px}
-    .db-track{background:#F3F4F6;border-radius:4px;height:7px}
-    .db-fill{height:100%;border-radius:4px}
-
-    /* 테이블 */
-    .monthly-table{width:100%;border-collapse:collapse;font-size:12px}
-    .monthly-table th{padding:8px 12px;text-align:left;background:#F9FAFB;color:#9CA3AF;font-weight:600;border-bottom:1px solid #E8EAF0}
-    .monthly-table td{padding:10px 12px;border-bottom:1px solid #F3F4F6;color:#374151}
-    .monthly-table tr:last-child td{border-bottom:none}
-    .up{color:#10B981;font-weight:600}
-    .dn{color:#EF4444;font-weight:600}
-
-    /* 인사이트 */
-    .ins-card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:16px 18px}
-    .ins-badge{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:2px 8px;margin-bottom:8px}
-    .ins-title{font-size:13px;font-weight:600;color:#1A1A2E;line-height:1.5}
-    .ins-sub{font-size:11px;color:#9CA3AF;margin-top:4px}
-
-    /* stat */
-    .stat-card{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:16px 18px}
-    .stat-icon{font-size:18px;margin-bottom:8px}
-    .stat-value{font-size:20px;font-weight:800}
-    .stat-label{font-size:11px;color:#9CA3AF;margin-top:3px}
-
+    /* ── 탭 ── */
     .tab-content{display:none}
     .tab-content.active{display:block}
+
+    /* ── 표 ── */
+    .data-table{width:100%;border-collapse:collapse;font-size:12px}
+    .data-table th{padding:8px 12px;text-align:left;background:#F9FAFB;color:#9CA3AF;font-weight:600;border-bottom:1px solid #E8EAF0;white-space:nowrap}
+    .data-table td{padding:9px 12px;border-bottom:1px solid #F3F4F6;color:#374151}
+    .data-table tr:last-child td{border-bottom:none}
+    .data-table tr:hover td{background:#FAFAFA}
+    .up{color:#10B981;font-weight:600}
+    .dn{color:#EF4444;font-weight:600}
+    .tag{display:inline-block;font-size:10px;font-weight:600;border-radius:4px;padding:1px 7px}
+
+    /* ── 병목 바 ── */
+    .bar-item{margin-bottom:10px}
+    .bar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:12px}
+    .bar-label{font-weight:600;color:#374151}
+    .bar-val{color:#9CA3AF}
+    .bar-track{background:#F3F4F6;border-radius:4px;height:7px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;transition:width .5s}
+
+    /* ── 토스트 ── */
     .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:600;z-index:9999;display:none;white-space:nowrap;box-shadow:0 4px 20px #0003}
+
+    /* ── 퇴사 사유 도넛 ── */
+    .reason-legend{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .reason-item{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+    .reason-left{display:flex;align-items:center;gap:8px}
+    .reason-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+    .reason-name{color:#374151}
+    .reason-val{font-weight:700;color:#1A1A2E}
+
+    /* ── 근태 ── */
+    .attend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+    .attend-card{background:#F9FAFB;border:1px solid #F3F4F6;border-radius:8px;padding:12px 14px}
+    .attend-label{font-size:11px;color:#9CA3AF;margin-bottom:4px}
+    .attend-value{font-size:20px;font-weight:800;color:#1A1A2E}
+    .attend-sub{font-size:10px;color:#9CA3AF;margin-top:3px}
   </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
 
-<!-- 사이드바 -->
-<aside class="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-title">HR 인사이트<br>대시보드</div>
-    <div class="sb-logo-sub">단계별 소요시간 분석</div>
+<!-- 비밀번호 화면 -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">S</div>
+    <div class="login-title">설로인 HR 대시보드</div>
+    <div class="login-sub">인사팀 전용 · 접근 권한이 필요합니다</div>
+    <div class="login-input-wrap">
+      <span class="login-input-icon">🔒</span>
+      <input class="login-input" type="password" id="pw-input" placeholder="비밀번호를 입력하세요" onkeydown="if(event.key==='Enter')checkPw()"/>
+    </div>
+    <button class="login-btn" onclick="checkPw()">입장하기</button>
+    <div class="login-error" id="pw-error">❌ 비밀번호가 올바르지 않습니다</div>
+    <div class="login-footer">© 2025 설로인 인사팀</div>
   </div>
-  <nav class="sb-nav">
-    <div class="nav-item active" onclick="switchTab('overview',this)"><span>📊</span> 대시보드</div>
-    <div class="nav-item" onclick="switchTab('headcount',this)"><span>🗓️</span> 월별 입사자</div>
-    <div class="nav-item" onclick="switchTab('pipeline',this)"><span>📋</span> 채용 현황</div>
-    <div class="nav-item" onclick="switchTab('budget',this)"><span>💰</span> 인건비</div>
-    <div class="nav-item" onclick="switchTab('insight',this)"><span>💡</span> 인사이트</div>
-  </nav>
-</aside>
+</div>
 
-<!-- 메인 -->
-<div class="main">
-  <div class="page-header">
-    <div>
-      <div class="page-title" id="page-title">채용 리드타임 분석</div>
-      <div class="page-sub">단계별 소요시간 및 병목 구간 분석 · 매월 입사자 기준</div>
-    </div>
-    <div class="header-right">
-      <select class="filter-select"><option>전체 기간</option><option>최근 3개월</option><option>최근 6개월</option></select>
-      <select class="filter-select"><option>전체 부서</option></select>
-      <label class="upload-btn">📂 엑셀 업로드<input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/></label>
-    </div>
-  </div>
-
-  <div class="dropzone" id="dropzone">
-    <div>
-      <div class="dz-title">📎 엑셀 파일을 드래그하거나 우측 상단 버튼으로 업로드하세요</div>
-      <div class="dz-sub">시트명: 인원현황 · 부서현황 · 채용파이프라인 · 인건비 · 인건비항목</div>
-    </div>
-    <div class="sheet-tags" id="sheet-tags"></div>
-  </div>
-
-  <div class="kpi-grid" id="kpi-grid"></div>
-
-  <!-- 대시보드 -->
-  <div class="tab-content active" id="tab-overview">
-    <div class="grid-2-1">
-      <div class="card">
-        <div class="card-title">부서별 평균 리드타임 (일)</div>
-        <div class="card-sub">막대 클릭 시 구성원 상세 확인</div>
-        <canvas id="deptLeadChart" height="220"></canvas>
-      </div>
-      <div class="card">
-        <div class="card-title">단계별 평균 소요시간 (일)</div>
-        <div class="card-sub">막대 클릭 시 인원별 소요일 상세 확인</div>
-        <canvas id="stageChart" height="220"></canvas>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-title">월별 입사자 리드타임 추이</div>
-      <div class="card-sub">입사월 기준 평균 리드타임 변화</div>
-      <canvas id="trendChart" height="110"></canvas>
-    </div>
-    <div class="card">
-      <div class="card-title">병목 구간 분석</div>
-      <div class="card-sub">각 단계 평균 소요일 / 최장 소요일</div>
-      <div id="bottleneck-list"></div>
-    </div>
-  </div>
-
-  <!-- 월별 입사자 -->
-  <div class="tab-content" id="tab-headcount">
-    <div class="grid-1-1">
-      <div class="card">
-        <div class="card-title">월별 입퇴사 현황</div>
-        <div class="card-sub">추이</div>
-        <canvas id="joinLeaveChart" height="220"></canvas>
-      </div>
-      <div class="card">
-        <div class="card-title">부서별 인원 분포</div>
-        <div class="card-sub" id="dept-total-text">전체 384명</div>
-        <div id="dept-bars"></div>
-      </div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <div class="card-title">월별 입사자 상세</div>
-      <div class="card-sub">월별 입사·퇴사·순증 현황</div>
-      <table class="monthly-table" id="monthly-table"></table>
-    </div>
-  </div>
-
-  <!-- 채용 현황 -->
-  <div class="tab-content" id="tab-pipeline">
-    <div class="flex-col">
-      <div class="grid-4" id="pipeline-stats"></div>
-      <div class="card">
-        <div class="card-title">포지션별 채용 파이프라인</div>
-        <div class="card-sub">단계별 후보자 진행 현황</div>
-        <div class="tbl-header">
-          <div>포지션</div><div style="text-align:center">서류</div><div style="text-align:center">1차면접</div>
-          <div style="text-align:center">2차면접</div><div style="text-align:center">최종</div>
-          <div style="text-align:center">상태</div><div style="text-align:center">진행률</div>
+<!-- 앱 -->
+<div id="app">
+  <!-- 사이드바 -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-brand">
+        <div class="sb-icon">S</div>
+        <div>
+          <div class="sb-title">설로인 HR</div>
+          <div class="sb-sub">대시보드</div>
         </div>
-        <div id="pipeline-table"></div>
       </div>
     </div>
-  </div>
+    <nav class="sb-nav">
+      <div class="nav-section">HR 현황</div>
+      <div class="nav-item active" onclick="switchTab('headcount',this)"><span class="ni">👥</span> 인원 현황</div>
+      <div class="nav-item" onclick="switchTab('labor',this)"><span class="ni">💰</span> 인건비</div>
+      <div class="nav-item" onclick="switchTab('turnover',this)"><span class="ni">🔄</span> 입퇴사</div>
+      <div class="nav-section">채용 · 근태</div>
+      <div class="nav-item" onclick="switchTab('recruit',this)"><span class="ni">📋</span> 채용 현황</div>
+      <div class="nav-item" onclick="switchTab('attend',this)"><span class="ni">⏰</span> 근태 이슈</div>
+    </nav>
+    <div class="sb-footer">
+      <label class="sb-upload">📂 엑셀 업로드<input type="file" id="fileInput" accept=".xlsx,.xls"/></label>
+    </div>
+  </aside>
 
-  <!-- 인건비 -->
-  <div class="tab-content" id="tab-budget">
-    <div class="flex-col">
-      <div class="grid-4" id="budget-stats"></div>
-      <div class="card">
-        <div class="card-title">월별 인건비 예산 vs 실적</div>
-        <div class="card-sub">단위: 만원</div>
-        <canvas id="budgetChart" height="220"></canvas>
+  <!-- 메인 -->
+  <div class="main">
+    <div class="dropzone" id="dropzone">
+      <div>
+        <div class="dz-title">📎 엑셀 파일을 드래그하거나 좌측 하단 버튼으로 업로드하세요</div>
+        <div class="dz-sub">시트: 인원현황 · 인건비 · 입퇴사 · 채용 · 근태</div>
       </div>
-      <div class="card">
-        <div class="card-title">항목별 인건비 현황</div>
-        <div class="card-sub">단위: 만원</div>
-        <div id="budget-breakdown"></div>
+      <div class="sheet-tags" id="sheet-tags"></div>
+    </div>
+
+    <!-- ══ 인원 현황 ══ -->
+    <div class="tab-content active" id="tab-headcount">
+      <div class="page-header">
+        <div><div class="page-title">인원 현황</div><div class="page-sub">PO별 · 팀별 · 오피스/현장 구분</div></div>
+        <div class="header-right">
+          <select class="filter-select" id="hc-month"><option>전체 기간</option></select>
+          <select class="filter-select" id="hc-po"><option>전체 PO</option><option>COO</option><option>SPC PO</option><option>본대로 PO</option><option>운영혁신실</option></select>
+          <select class="filter-select" id="hc-type"><option>전체</option><option>오피스</option><option>현장</option></select>
+        </div>
+      </div>
+      <div class="kpi-grid kpi-4" id="hc-kpi"></div>
+      <div class="grid-6-4">
+        <div class="card">
+          <div class="card-title">월별 총 인원 추이</div>
+          <div class="card-sub">오피스 / 현장 구분</div>
+          <canvas id="hcTrendChart" height="180"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">PO별 인원 분포</div>
+          <div class="card-sub">현재 기준</div>
+          <canvas id="hcPoChart" height="180"></canvas>
+        </div>
+      </div>
+      <div class="card mb14">
+        <div class="card-title">팀별 인원 현황</div>
+        <div class="card-sub">PO · 팀 · 오피스/현장 · 월별 변동</div>
+        <table class="data-table" id="hc-table"></table>
       </div>
     </div>
-  </div>
 
-  <!-- 인사이트 -->
-  <div class="tab-content" id="tab-insight">
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px" id="insight-grid"></div>
+    <!-- ══ 인건비 ══ -->
+    <div class="tab-content" id="tab-labor">
+      <div class="page-header">
+        <div><div class="page-title">인건비</div><div class="page-sub">PO · 팀별 목표 대비 월별 / 누적 인건비 및 인건비율</div></div>
+        <div class="header-right">
+          <select class="filter-select"><option>전체 기간</option></select>
+          <select class="filter-select"><option>전체 PO</option><option>COO</option><option>SPC PO</option><option>본대로 PO</option><option>운영혁신실</option></select>
+        </div>
+      </div>
+      <div class="kpi-grid kpi-4" id="lb-kpi"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">월별 인건비 추이</div>
+          <div class="card-sub">목표 vs 실적 (단위: 만원)</div>
+          <canvas id="lbTrendChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">PO별 인건비율</div>
+          <div class="card-sub">목표 대비 실적 (%)</div>
+          <canvas id="lbRateChart" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">PO · 팀별 인건비 상세</div>
+        <div class="card-sub">월별 · 누적 목표 대비 실적</div>
+        <table class="data-table" id="lb-table"></table>
+      </div>
+    </div>
+
+    <!-- ══ 입퇴사 ══ -->
+    <div class="tab-content" id="tab-turnover">
+      <div class="page-header">
+        <div><div class="page-title">입퇴사</div><div class="page-sub">입사 · 퇴사 · 퇴사율 · 사유별 분석</div></div>
+        <div class="header-right">
+          <select class="filter-select"><option>전체 기간</option></select>
+          <select class="filter-select"><option>전체 PO</option><option>COO</option><option>SPC PO</option><option>본대로 PO</option><option>운영혁신실</option></select>
+        </div>
+      </div>
+      <div class="kpi-grid kpi-4" id="tv-kpi"></div>
+      <div class="grid-6-4">
+        <div class="card">
+          <div class="card-title">월별 입퇴사 추이</div>
+          <div class="card-sub">입사 / 퇴사 / 퇴사율</div>
+          <canvas id="tvTrendChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">퇴사 사유 분석</div>
+          <div class="card-sub">사유별 퇴사 비중</div>
+          <canvas id="tvReasonChart" height="160"></canvas>
+          <div class="reason-legend" id="tv-reason-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">월별 입퇴사 상세</div>
+        <div class="card-sub">핵심인재 퇴사 · 자진퇴사 · PIP · 계약만료 · 3개월 이내 부적응</div>
+        <table class="data-table" id="tv-table"></table>
+      </div>
+    </div>
+
+    <!-- ══ 채용 ══ -->
+    <div class="tab-content" id="tab-recruit">
+      <div class="page-header">
+        <div><div class="page-title">채용 현황</div><div class="page-sub">포지션 수 · 평균 리드타임 · 월별 채용 인원</div></div>
+        <div class="header-right">
+          <select class="filter-select"><option>전체 기간</option></select>
+          <select class="filter-select"><option>전체 PO</option><option>COO</option><option>SPC PO</option><option>본대로 PO</option><option>운영혁신실</option></select>
+        </div>
+      </div>
+      <div class="kpi-grid kpi-4" id="rc-kpi"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">월별 채용 인원</div>
+          <div class="card-sub">입사 확정 기준</div>
+          <canvas id="rcMonthChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">PO별 평균 리드타임</div>
+          <div class="card-sub">공고 → 입사 소요일</div>
+          <canvas id="rcLeadChart" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">포지션별 채용 현황</div>
+        <div class="card-sub">진행 중인 채용 포지션</div>
+        <table class="data-table" id="rc-table"></table>
+      </div>
+    </div>
+
+    <!-- ══ 근태 이슈 ══ -->
+    <div class="tab-content" id="tab-attend">
+      <div class="page-header">
+        <div><div class="page-title">근태 이슈</div><div class="page-sub">지각 · 조퇴 · 결근 · 연차소진율 · 초과근무</div></div>
+        <div class="header-right">
+          <select class="filter-select"><option>전체 기간</option></select>
+          <select class="filter-select"><option>전체 PO</option><option>COO</option><option>SPC PO</option><option>본대로 PO</option><option>운영혁신실</option></select>
+        </div>
+      </div>
+      <div class="kpi-grid kpi-4" id="at-kpi"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">월별 근태 이슈 추이</div>
+          <div class="card-sub">지각 · 조퇴 · 결근 건수</div>
+          <canvas id="atTrendChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">연차 소진율</div>
+          <div class="card-sub">팀별 연차 소진 현황 (%)</div>
+          <canvas id="atLeaveChart" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">근태 이슈 상세</div>
+        <div class="card-sub">팀별 지각·조퇴·결근·초과근무 현황</div>
+        <table class="data-table" id="at-table"></table>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-let headcount=[{month:"1월",total:342,join:18,leave:8},{month:"2월",total:352,join:15,leave:5},{month:"3월",total:361,join:20,leave:11},{month:"4월",total:370,join:14,leave:5},{month:"5월",total:378,join:12,leave:4},{month:"6월",total:384,join:9,leave:3}];
-let deptData=[{name:"개발팀",value:120,color:"#6366F1",lt:45},{name:"영업팀",value:85,color:"#10B981",lt:62},{name:"마케팅팀",value:62,color:"#F59E0B",lt:38},{name:"HR팀",value:38,color:"#EF4444",lt:29},{name:"재무팀",value:45,color:"#8B5CF6",lt:55},{name:"운영팀",value:34,color:"#06B6D4",lt:41}];
-let pipeline=[{position:"시니어 개발자",total:3,s1:3,s2:2,s3:1,s4:0,status:"진행중",urgent:true},{position:"마케팅 매니저",total:1,s1:1,s2:1,s3:1,s4:1,status:"최종단계",urgent:false},{position:"재무 분석가",total:2,s1:2,s2:2,s3:0,s4:0,status:"진행중",urgent:false},{position:"영업 팀장",total:1,s1:1,s2:0,s3:0,s4:0,status:"초기단계",urgent:true},{position:"UX 디자이너",total:2,s1:2,s2:2,s3:2,s4:0,status:"심사중",urgent:false}];
-let budget=[{month:"1월",budget:4200,actual:4050},{month:"2월",budget:4200,actual:4100},{month:"3월",budget:4300,actual:4280},{month:"4월",budget:4300,actual:4350},{month:"5월",budget:4500,actual:4420},{month:"6월",budget:4500,actual:4510}];
-let breakdown=[{label:"기본급",budget:3200,actual:3180,color:"#6366F1"},{label:"성과급",budget:600,actual:650,color:"#F59E0B"},{label:"복리후생",budget:400,actual:390,color:"#10B981"},{label:"교육훈련",budget:300,actual:290,color:"#8B5CF6"}];
-const stageData=[{label:"공고→1차",avg:37,max:433,color:"#6366F1",alert:true},{label:"1차→2차",avg:18,max:50,color:"#10B981",alert:false},{label:"2차→처우",avg:17,max:61,color:"#F59E0B",alert:false},{label:"처우→합격",avg:11,max:51,color:"#EF4444",alert:false},{label:"합격→입사",avg:16,max:87,color:"#8B5CF6",alert:false}];
-const COLORS=["#6366F1","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
-const stageColors=["#6366F1","#10B981","#F59E0B","#06B6D4"];
-const statusColors={"진행중":"#6366F1","최종단계":"#10B981","초기단계":"#9CA3AF","심사중":"#F59E0B"};
+// ── 비밀번호 ──────────────────────────────────────────────
+function checkPw(){
+  const v=document.getElementById("pw-input").value;
+  if(v==="sirhr0905"){
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").classList.add("visible");
+    renderAll();
+  } else {
+    document.getElementById("pw-error").style.display="block";
+    document.getElementById("pw-input").value="";
+    document.getElementById("pw-input").focus();
+  }
+}
+
+// ── 샘플 데이터 ───────────────────────────────────────────
+const POS = ["COO","SPC PO","본대로 PO","운영혁신실"];
+const TEAMS = {
+  "COO":["경영관리팀","마케팅팀","회계팀","법인사업팀","총무팀","디자인팀","신사업TF"],
+  "SPC PO":["품질관리팀","생산팀","재고관리팀","B2C물류팀","B2B물류팀"],
+  "본대로 PO":["사업팀","영업팀","제품팀","개발팀","알파TF","테크팀"],
+  "운영혁신실":["운영기획팀","상품기획팀","구매영업팀","인사팀","고객경험관리팀","패키지운영팀"]
+};
+const MONTHS = ["1월","2월","3월","4월","5월","6월"];
+const COLORS = ["#667eea","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899"];
+const PO_COLORS = {"COO":"#667eea","SPC PO":"#10B981","본대로 PO":"#F59E0B","운영혁신실":"#EF4444"};
+
+// 인원 샘플
+const hcData = MONTHS.map((m,i)=>({
+  month:m,
+  office:120+i*2,
+  field:80+i,
+  total:200+i*3,
+  byPo:{"COO":55+i,"SPC PO":60+i,"본대로 PO":52+i,"운영혁신실":33+i}
+}));
+
+// 팀별 샘플
+const teamData = [];
+Object.entries(TEAMS).forEach(([po,teams])=>{
+  teams.forEach(team=>{
+    const office=Math.round(3+Math.random()*12);
+    const field=Math.round(Math.random()*8);
+    teamData.push({po,team,office,field,total:office+field,prev:office+field-Math.round(Math.random()*2-1)});
+  });
+});
+
+// 인건비 샘플
+const lbData = MONTHS.map((m,i)=>({
+  month:m,
+  target:8500+i*100,
+  actual:8300+i*120+Math.round(Math.random()*200-100),
+  rate:97+Math.random()*5
+}));
+const lbTeamData = Object.entries(TEAMS).flatMap(([po,teams])=>
+  teams.map(team=>({
+    po, team,
+    monthTarget:Math.round(300+Math.random()*400),
+    monthActual:Math.round(300+Math.random()*400),
+    cumTarget:Math.round(1800+Math.random()*2000),
+    cumActual:Math.round(1800+Math.random()*2000),
+    rate:(95+Math.random()*10).toFixed(1)
+  }))
+);
+
+// 입퇴사 샘플
+const tvData = MONTHS.map((m,i)=>({
+  month:m, join:8+Math.round(Math.random()*6), leave:3+Math.round(Math.random()*4),
+  핵심인재:Math.round(Math.random()*1), 자진퇴사:1+Math.round(Math.random()*2),
+  PIP:Math.round(Math.random()*1), 계약만료:Math.round(Math.random()*2),
+  부적응:Math.round(Math.random()*1)
+}));
+const tvReasons = [
+  {label:"자진퇴사",      count:14, color:"#EF4444"},
+  {label:"계약만료",      count:8,  color:"#F59E0B"},
+  {label:"핵심인재 퇴사", count:3,  color:"#8B5CF6"},
+  {label:"3개월 이내 부적응",count:4,color:"#06B6D4"},
+  {label:"저성과자 PIP",  count:2,  color:"#EC4899"},
+];
+
+// 채용 샘플
+const rcData = MONTHS.map((m,i)=>({month:m, hired:6+Math.round(Math.random()*5)}));
+const rcPositions = [
+  {po:"COO",team:"마케팅팀",position:"마케팅 매니저",stage:"2차면접",leadtime:32,urgent:false},
+  {po:"SPC PO",team:"생산팀",position:"생산 엔지니어",stage:"서류",leadtime:15,urgent:true},
+  {po:"본대로 PO",team:"개발팀",position:"시니어 개발자",stage:"최종",leadtime:45,urgent:false},
+  {po:"운영혁신실",team:"인사팀",position:"HR 매니저",stage:"1차면접",leadtime:20,urgent:false},
+  {po:"COO",team:"회계팀",position:"재무 분석가",stage:"서류",leadtime:10,urgent:true},
+  {po:"본대로 PO",team:"테크팀",position:"DevOps 엔지니어",stage:"2차면접",leadtime:38,urgent:false},
+];
+const rcLeadByPo = POS.map(po=>({po, avg:Math.round(25+Math.random()*30)}));
+
+// 근태 샘플
+const atData = MONTHS.map((m,i)=>({
+  month:m,
+  late:5+Math.round(Math.random()*8),
+  early:3+Math.round(Math.random()*5),
+  absent:1+Math.round(Math.random()*3),
+  overtime:20+Math.round(Math.random()*15)
+}));
+const atTeams = Object.entries(TEAMS).flatMap(([po,teams])=>
+  teams.map(team=>({
+    po, team,
+    late:Math.round(Math.random()*4),
+    early:Math.round(Math.random()*3),
+    absent:Math.round(Math.random()*2),
+    leaveRate:(40+Math.random()*55).toFixed(0),
+    overtime:Math.round(Math.random()*30)
+  }))
+);
+
+// ── 차트 ──────────────────────────────────────────────────
 let charts={};
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 const tt={backgroundColor:"#1A1A2E",titleColor:"#fff",bodyColor:"#D1D5DB",cornerRadius:6,padding:10};
-const sc={x:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}},y:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}}};
+const gridColor="#F3F4F6";
+const tickColor="#9CA3AF";
 
-function renderKPI(){
-  const last=headcount[headcount.length-1]||{total:0,join:0,leave:0};
-  const avgL=Math.round(stageData.reduce((s,d)=>s+d.avg,0));
-  const maxL=Math.max(...stageData.map(d=>d.max));
-  const minL=Math.min(...stageData.map(d=>d.avg));
-  const over=pipeline.filter(d=>d.urgent).length;
-  const kpis=[
-    {label:"평균 리드타임",value:`${avgL}일`,sub:"입사일 기준",danger:false},
-    {label:"최장 리드타임",value:`${maxL}일`,sub:"단일 케이스",danger:false},
-    {label:"최단 리드타임",value:`${minL}일`,sub:"단일 케이스",danger:false},
-    {label:"총 입사자 수",value:`${last.join}명`,sub:"필터 기준",danger:false},
-    {label:"60일 초과",value:`${over}건`,sub:"병목 의심",danger:true},
-  ];
-  document.getElementById("kpi-grid").innerHTML=kpis.map(k=>`<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value${k.danger?" danger":""}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
-}
-
-function renderDeptLead(){
-  dc("deptLead");
-  charts.deptLead=new Chart(document.getElementById("deptLeadChart"),{
+// 인원 추이
+function renderHcTrend(){
+  dc("hcTrend");
+  charts.hcTrend=new Chart(document.getElementById("hcTrendChart"),{
     type:"bar",
-    data:{labels:deptData.map(d=>d.name),datasets:[{data:deptData.map(d=>d.lt),backgroundColor:deptData.map(d=>d.color+"CC"),borderRadius:4,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.raw}일`}}},scales:{x:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}},y:{ticks:{color:"#374151",font:{size:11}},grid:{display:false}}}}
+    data:{labels:hcData.map(d=>d.month),datasets:[
+      {label:"오피스",data:hcData.map(d=>d.office),backgroundColor:"#667eea",borderRadius:4,stack:"s"},
+      {label:"현장",data:hcData.map(d=>d.field),backgroundColor:"#10B981",borderRadius:4,stack:"s"},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false},stacked:true},y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor},stacked:true}}}
   });
 }
 
-function renderStage(){
-  dc("stage");
-  charts.stage=new Chart(document.getElementById("stageChart"),{
-    type:"bar",
-    data:{labels:stageData.map(d=>d.label),datasets:[{data:stageData.map(d=>d.avg),backgroundColor:stageData.map(d=>d.color+"BB"),borderRadius:6,borderSkipped:false}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`평균 ${c.raw}일`}}},scales:{x:{ticks:{color:"#374151",font:{size:10}},grid:{display:false}},y:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}}}}
+// PO 도넛
+function renderHcPo(){
+  dc("hcPo");
+  const last=hcData[hcData.length-1];
+  charts.hcPo=new Chart(document.getElementById("hcPoChart"),{
+    type:"doughnut",
+    data:{labels:POS,datasets:[{data:POS.map(p=>last.byPo[p]),backgroundColor:POS.map(p=>PO_COLORS[p]),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,cutout:"60%",plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt,callbacks:{label:c=>`${c.label}: ${c.raw}명`}}}}
   });
 }
 
-function renderTrend(){
-  dc("trend");
-  const trendVals=[38,82,42,155,32,98,102,35,65,55,70];
-  const months=["2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12"];
-  charts.trend=new Chart(document.getElementById("trendChart"),{
-    type:"line",
-    data:{labels:months,datasets:[{label:"리드타임(일)",data:trendVals.slice(0,months.length),borderColor:"#6366F1",backgroundColor:"#6366F122",fill:true,tension:0.4,pointBackgroundColor:"#6366F1",pointRadius:5,pointHoverRadius:7}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tt}},scales:{x:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}},y:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"},min:20}}}
-  });
-}
-
-function renderBottleneck(){
-  const maxA=Math.max(...stageData.map(d=>d.avg));
-  document.getElementById("bottleneck-list").innerHTML=stageData.map(d=>`
-    <div class="bn-item">
-      <div class="bn-header">
-        <div class="bn-label">${d.label}${d.alert?' <span class="bn-alert">⚠ 병목</span>':""}</div>
-        <div class="bn-values">평균 ${d.avg}일 / 최장 ${d.max}일</div>
-      </div>
-      <div class="bn-track"><div class="bn-fill" style="width:${(d.avg/maxA)*100}%;background:${d.color}"></div></div>
-    </div>`).join("");
-}
-
-function renderJoinLeave(){
-  dc("joinLeave");
-  charts.joinLeave=new Chart(document.getElementById("joinLeaveChart"),{
-    type:"bar",
-    data:{labels:headcount.map(d=>d.month),datasets:[{label:"입사",data:headcount.map(d=>d.join),backgroundColor:"#6366F1",borderRadius:4},{label:"퇴사",data:headcount.map(d=>d.leave),backgroundColor:"#F87171",borderRadius:4}]},
-    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt}},scales:{x:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{display:false}},y:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}}}}
-  });
-}
-
-function renderDeptBars(){
-  const total=deptData.reduce((s,d)=>s+d.value,0);
-  document.getElementById("dept-total-text").textContent=`전체 ${total}명`;
-  document.getElementById("dept-bars").innerHTML=deptData.map(d=>`
-    <div class="db-item">
-      <div class="db-header"><span style="font-weight:600;color:#374151">${d.name}</span><span style="font-weight:700;color:${d.color}">${d.value}명</span></div>
-      <div class="db-track"><div class="db-fill" style="width:${(d.value/total)*100}%;background:${d.color}"></div></div>
-    </div>`).join("");
-}
-
-function renderMonthlyTable(){
-  document.getElementById("monthly-table").innerHTML=`
-    <thead><tr><th>월</th><th>전체 인원</th><th>입사</th><th>퇴사</th><th>순증</th><th>이직률</th></tr></thead>
-    <tbody>${headcount.map(r=>{
-      const net=r.join-r.leave;
-      const rate=(r.leave/r.total*100).toFixed(1);
-      return `<tr><td style="font-weight:600">${r.month}</td><td>${r.total.toLocaleString()}명</td><td class="up">+${r.join}</td><td class="dn">-${r.leave}</td><td class="${net>=0?"up":"dn"}">${net>=0?"+":""}${net}</td><td>${rate}%</td></tr>`;
+// 팀별 테이블
+function renderHcTable(){
+  document.getElementById("hc-table").innerHTML=`
+    <thead><tr><th>PO</th><th>팀</th><th>오피스</th><th>현장</th><th>합계</th><th>전월 대비</th></tr></thead>
+    <tbody>${teamData.map(r=>{
+      const diff=r.total-r.prev;
+      return `<tr>
+        <td><span class="tag" style="background:${PO_COLORS[r.po]}22;color:${PO_COLORS[r.po]}">${r.po}</span></td>
+        <td style="font-weight:600">${r.team}</td>
+        <td>${r.office}명</td><td>${r.field}명</td><td style="font-weight:700">${r.total}명</td>
+        <td class="${diff>=0?"up":"dn"}">${diff>=0?"+":""}${diff}</td>
+      </tr>`;
     }).join("")}</tbody>`;
 }
 
-function renderPipeline(){
-  const urgent=pipeline.filter(d=>d.urgent).length;
-  const total=pipeline.reduce((s,d)=>s+d.total,0);
-  document.getElementById("pipeline-stats").innerHTML=[
-    {label:"오픈 포지션",value:`${total}개`,color:"#6366F1",icon:"📋"},
-    {label:"긴급 채용",value:`${urgent}건`,color:"#EF4444",icon:"🚨"},
-    {label:"이번달 목표",value:"5명",color:"#F59E0B",icon:"🎯"},
-    {label:"평균 채용 기간",value:"32일",color:"#10B981",icon:"⏳"},
-  ].map(s=>`<div class="stat-card"><div class="stat-icon">${s.icon}</div><div class="stat-value" style="color:${s.color}">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join("");
-
-  document.getElementById("pipeline-table").innerHTML=pipeline.map((row,i)=>{
-    const stages=[row.s1,row.s2,row.s3,row.s4];
-    const maxS=row.s4>0?4:row.s3>0?3:row.s2>0?2:1;
-    const prog=Math.round((maxS/4)*100);
-    const sc=statusColors[row.status]||"#9CA3AF";
-    return `<div class="tbl-row" style="background:${row.urgent?"#FFF5F5":"transparent"};border-bottom:${i<pipeline.length-1?"1px solid #F3F4F6":"none"}">
-      <div><div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">${row.urgent?'<span class="urgent-tag">긴급</span>':""} ${row.position}</div><div style="font-size:10px;color:#9CA3AF;margin-top:2px">총 ${row.total}명 채용 목표</div></div>
-      ${stages.map((v,si)=>`<div style="text-align:center"><div class="stage-bub" style="background:${v>0?stageColors[si]+"22":"#F3F4F6"};color:${v>0?stageColors[si]:"#9CA3AF"}">${v}</div></div>`).join("")}
-      <div style="text-align:center"><span class="status-tag" style="background:${sc}22;color:${sc}">${row.status}</span></div>
-      <div><div class="prog-track"><div class="prog-fill" style="width:${prog}%;background:${prog===100?"#10B981":prog>=75?"#F59E0B":"#6366F1"}"></div></div><div style="font-size:10px;color:#9CA3AF;margin-top:4px;text-align:right">${prog}%</div></div>
-    </div>`;
-  }).join("");
+// 인원 KPI
+function renderHcKpi(){
+  const last=hcData[hcData.length-1];
+  const prev=hcData[hcData.length-2];
+  const diff=last.total-prev.total;
+  document.getElementById("hc-kpi").innerHTML=[
+    {label:"총 직원수",value:`${last.total}명`,sub:`전월 대비 ${diff>=0?"+":""}${diff}`,color:"accent"},
+    {label:"오피스",value:`${last.office}명`,sub:`전체의 ${Math.round(last.office/last.total*100)}%`,color:""},
+    {label:"현장",value:`${last.field}명`,sub:`전체의 ${Math.round(last.field/last.total*100)}%`,color:"green"},
+    {label:"팀 수",value:`${Object.values(TEAMS).flat().length}개`,sub:"활성 팀",color:""},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-accent" style="background:#667eea"></div><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
 }
 
-function renderBudget(){
-  const lb=budget[budget.length-1]||{budget:1,actual:0};
-  const br=((lb.actual/lb.budget)*100).toFixed(1);
-  document.getElementById("budget-stats").innerHTML=[
-    {label:"최근월 예산",value:`${lb.budget.toLocaleString()}만원`,color:"#6366F1",icon:"📊"},
-    {label:"최근월 실적",value:`${lb.actual.toLocaleString()}만원`,color:br>100?"#EF4444":"#10B981",icon:"💰"},
-    {label:"예산 집행률",value:`${br}%`,color:br>100?"#EF4444":"#10B981",icon:"📈"},
-    {label:"인건비 항목",value:`${breakdown.length}개`,color:"#8B5CF6",icon:"🏦"},
-  ].map(s=>`<div class="stat-card"><div class="stat-icon">${s.icon}</div><div class="stat-value" style="color:${s.color}">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join("");
+// 인건비 KPI
+function renderLbKpi(){
+  const last=lbData[lbData.length-1];
+  const rate=(last.actual/last.target*100).toFixed(1);
+  const cumTarget=lbData.reduce((s,d)=>s+d.target,0);
+  const cumActual=lbData.reduce((s,d)=>s+d.actual,0);
+  document.getElementById("lb-kpi").innerHTML=[
+    {label:"이번달 목표",value:`${last.target.toLocaleString()}만`,sub:"",color:""},
+    {label:"이번달 실적",value:`${last.actual.toLocaleString()}만`,sub:`집행률 ${rate}%`,color:rate>100?"red":"green"},
+    {label:"누적 목표",value:`${cumTarget.toLocaleString()}만`,sub:"상반기",color:""},
+    {label:"누적 실적",value:`${cumActual.toLocaleString()}만`,sub:`누적 집행률 ${(cumActual/cumTarget*100).toFixed(1)}%`,color:(cumActual/cumTarget*100)>100?"red":"green"},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-accent" style="background:#10B981"></div><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+}
 
-  dc("budget");
-  charts.budget=new Chart(document.getElementById("budgetChart"),{
+// 인건비 추이
+function renderLbTrend(){
+  dc("lbTrend");
+  charts.lbTrend=new Chart(document.getElementById("lbTrendChart"),{
     type:"line",
-    data:{labels:budget.map(d=>d.month),datasets:[{label:"예산",data:budget.map(d=>d.budget),borderColor:"#6366F1",borderDash:[6,3],pointBackgroundColor:"#6366F1",pointRadius:4,tension:0.3,fill:false},{label:"실적",data:budget.map(d=>d.actual),borderColor:"#EF4444",pointBackgroundColor:"#EF4444",pointRadius:4,tension:0.3,fill:false}]},
-    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt,callbacks:{label:c=>`${c.dataset.label}: ${c.raw.toLocaleString()}만원`}}},scales:{x:{ticks:{color:"#9CA3AF",font:{size:11}},grid:{color:"#F3F4F6"}},y:{ticks:{color:"#9CA3AF",font:{size:11},callback:v=>v.toLocaleString()},grid:{color:"#F3F4F6"}}}}
+    data:{labels:lbData.map(d=>d.month),datasets:[
+      {label:"목표",data:lbData.map(d=>d.target),borderColor:"#D1D5DB",borderDash:[5,3],pointRadius:3,tension:0.3,fill:false},
+      {label:"실적",data:lbData.map(d=>d.actual),borderColor:"#667eea",backgroundColor:"#667eea22",fill:true,pointBackgroundColor:"#667eea",pointRadius:4,tension:0.3},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt,callbacks:{label:c=>`${c.dataset.label}: ${c.raw.toLocaleString()}만원`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false}},y:{ticks:{color:tickColor,font:{size:11},callback:v=>v.toLocaleString()},grid:{color:gridColor}}}}
   });
-
-  document.getElementById("budget-breakdown").innerHTML=breakdown.map(b=>{
-    const rate=((b.actual/b.budget)*100).toFixed(1);
-    const over=b.actual>b.budget;
-    return `<div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:2px;background:${b.color}"></div><span style="font-size:13px;font-weight:600">${b.label}</span></div>
-        <div style="display:flex;gap:16px;font-size:12px"><span style="color:#9CA3AF">예산 ${b.budget.toLocaleString()}</span><span style="color:${over?"#EF4444":"#10B981"};font-weight:700">실적 ${b.actual.toLocaleString()}</span><span style="color:${over?"#EF4444":"#10B981"};font-weight:700">${rate}%</span></div>
-      </div>
-      <div style="background:#F3F4F6;border-radius:4px;height:8px;overflow:hidden"><div style="width:${Math.min(rate,110)}%;height:100%;background:${over?"#EF4444":b.color};border-radius:4px"></div></div>
-    </div>`;
-  }).join("");
 }
 
-function renderInsight(){
-  const ins=[
-    {badge:"🚨 주의",bc:"#FEE2E2",bt:"#EF4444",title:"공고→1차 단계 병목 심각",desc:"평균 37일, 최장 433일로 전체 리드타임의 40%를 차지합니다. JD 품질 개선 및 서류 검토 프로세스 단축이 필요합니다."},
-    {badge:"💡 개선",bc:"#EEF2FF",bt:"#4F46E5",title:"B2B물류팀 리드타임 최장",desc:"평균 210일로 전사 평균 91일의 2배 이상입니다. 전문 인력 풀 확보 및 채용 경로 다양화를 권장합니다."},
-    {badge:"✅ 양호",bc:"#D1FAE5",bt:"#10B981",title:"HR팀 리드타임 최단",desc:"평균 29일로 전사 최단 리드타임입니다. HR팀의 채용 프로세스를 타 부서에 벤치마킹하는 것을 권장합니다."},
-    {badge:"📈 트렌드",bc:"#FEF3C7",bt:"#D97706",title:"7월 리드타임 급증",desc:"7월 입사자 기준 리드타임이 전월 대비 50% 증가했습니다. 상반기 집중 채용으로 인한 프로세스 과부하로 추정됩니다."},
-  ];
-  document.getElementById("insight-grid").innerHTML=ins.map(i=>`
-    <div class="ins-card">
-      <div class="ins-badge" style="background:${i.bc};color:${i.bt}">${i.badge}</div>
-      <div class="ins-title">${i.title}</div>
-      <div class="ins-sub">${i.desc}</div>
+// 인건비율
+function renderLbRate(){
+  dc("lbRate");
+  const data=POS.map(po=>({po,rate:(95+Math.random()*10).toFixed(1)}));
+  charts.lbRate=new Chart(document.getElementById("lbRateChart"),{
+    type:"bar",
+    data:{labels:data.map(d=>d.po),datasets:[{data:data.map(d=>d.rate),backgroundColor:POS.map(p=>PO_COLORS[p]+"CC"),borderRadius:6}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.raw}%`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false}},y:{ticks:{color:tickColor,font:{size:11},callback:v=>v+"%"},grid:{color:gridColor},min:85,max:115}}}
+  });
+}
+
+// 인건비 테이블
+function renderLbTable(){
+  document.getElementById("lb-table").innerHTML=`
+    <thead><tr><th>PO</th><th>팀</th><th>월 목표</th><th>월 실적</th><th>인건비율</th><th>누적 목표</th><th>누적 실적</th><th>누적 집행률</th></tr></thead>
+    <tbody>${lbTeamData.map(r=>{
+      const over=r.monthActual>r.monthTarget;
+      const cumOver=r.cumActual>r.cumTarget;
+      return `<tr>
+        <td><span class="tag" style="background:${PO_COLORS[r.po]}22;color:${PO_COLORS[r.po]}">${r.po}</span></td>
+        <td style="font-weight:600">${r.team}</td>
+        <td>${r.monthTarget.toLocaleString()}만</td>
+        <td class="${over?"dn":"up"}">${r.monthActual.toLocaleString()}만</td>
+        <td class="${over?"dn":"up"}">${r.rate}%</td>
+        <td>${r.cumTarget.toLocaleString()}만</td>
+        <td class="${cumOver?"dn":"up"}">${r.cumActual.toLocaleString()}만</td>
+        <td class="${cumOver?"dn":"up"}">${(r.cumActual/r.cumTarget*100).toFixed(1)}%</td>
+      </tr>`;
+    }).join("")}</tbody>`;
+}
+
+// 입퇴사 KPI
+function renderTvKpi(){
+  const totalJoin=tvData.reduce((s,d)=>s+d.join,0);
+  const totalLeave=tvData.reduce((s,d)=>s+d.leave,0);
+  const last=hcData[hcData.length-1];
+  const tvRate=(totalLeave/last.total*100).toFixed(1);
+  const keyLeave=tvData.reduce((s,d)=>s+d.핵심인재,0);
+  document.getElementById("tv-kpi").innerHTML=[
+    {label:"누적 입사",value:`${totalJoin}명`,sub:"상반기",color:"green"},
+    {label:"누적 퇴사",value:`${totalLeave}명`,sub:"상반기",color:"red"},
+    {label:"퇴사율",value:`${tvRate}%`,sub:"업계 평균 3.8%",color:tvRate>4?"red":""},
+    {label:"핵심인재 퇴사",value:`${keyLeave}명`,sub:"⚠️ 요주의",color:keyLeave>2?"red":"orange"},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-accent" style="background:#EF4444"></div><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+}
+
+// 입퇴사 추이
+function renderTvTrend(){
+  dc("tvTrend");
+  charts.tvTrend=new Chart(document.getElementById("tvTrendChart"),{
+    type:"bar",
+    data:{labels:tvData.map(d=>d.month),datasets:[
+      {label:"입사",data:tvData.map(d=>d.join),backgroundColor:"#667eea",borderRadius:4},
+      {label:"퇴사",data:tvData.map(d=>d.leave),backgroundColor:"#EF4444",borderRadius:4},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false}},y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}}}}
+  });
+}
+
+// 퇴사 사유
+function renderTvReason(){
+  dc("tvReason");
+  charts.tvReason=new Chart(document.getElementById("tvReasonChart"),{
+    type:"doughnut",
+    data:{labels:tvReasons.map(d=>d.label),datasets:[{data:tvReasons.map(d=>d.count),backgroundColor:tvReasons.map(d=>d.color),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,cutout:"62%",plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.label}: ${c.raw}명`}}}}
+  });
+  document.getElementById("tv-reason-legend").innerHTML=tvReasons.map(r=>`
+    <div class="reason-item">
+      <div class="reason-left"><div class="reason-dot" style="background:${r.color}"></div><span class="reason-name">${r.label}</span></div>
+      <span class="reason-val">${r.count}명</span>
     </div>`).join("");
 }
 
+// 입퇴사 테이블
+function renderTvTable(){
+  document.getElementById("tv-table").innerHTML=`
+    <thead><tr><th>월</th><th>입사</th><th>퇴사</th><th>퇴사율</th><th>핵심인재</th><th>자진퇴사</th><th>PIP</th><th>계약만료</th><th>3개월 이내</th></tr></thead>
+    <tbody>${tvData.map(r=>{
+      const last=hcData[hcData.length-1];
+      const rate=(r.leave/last.total*100).toFixed(1);
+      return `<tr>
+        <td style="font-weight:600">${r.month}</td>
+        <td class="up">+${r.join}</td><td class="dn">-${r.leave}</td>
+        <td class="${rate>1?"dn":""}">${rate}%</td>
+        <td class="${r.핵심인재>0?"dn":""}">${r.핵심인재}</td>
+        <td>${r.자진퇴사}</td><td>${r.PIP}</td><td>${r.계약만료}</td><td>${r.부적응}</td>
+      </tr>`;
+    }).join("")}</tbody>`;
+}
+
+// 채용 KPI
+function renderRcKpi(){
+  const totalHired=rcData.reduce((s,d)=>s+d.hired,0);
+  const openPos=rcPositions.length;
+  const avgLead=Math.round(rcLeadByPo.reduce((s,d)=>s+d.avg,0)/rcLeadByPo.length);
+  const urgent=rcPositions.filter(d=>d.urgent).length;
+  document.getElementById("rc-kpi").innerHTML=[
+    {label:"오픈 포지션",value:`${openPos}개`,sub:"진행중",color:"accent"},
+    {label:"누적 채용 인원",value:`${totalHired}명`,sub:"상반기",color:"green"},
+    {label:"평균 리드타임",value:`${avgLead}일`,sub:"공고 → 입사",color:""},
+    {label:"긴급 포지션",value:`${urgent}건`,sub:"⚠️ 즉시 충원",color:urgent>0?"red":""},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-accent" style="background:#F59E0B"></div><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+}
+
+// 월별 채용
+function renderRcMonth(){
+  dc("rcMonth");
+  charts.rcMonth=new Chart(document.getElementById("rcMonthChart"),{
+    type:"bar",
+    data:{labels:rcData.map(d=>d.month),datasets:[{label:"채용 인원",data:rcData.map(d=>d.hired),backgroundColor:"#F59E0B",borderRadius:6}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.raw}명`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false}},y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}}}}
+  });
+}
+
+// PO별 리드타임
+function renderRcLead(){
+  dc("rcLead");
+  charts.rcLead=new Chart(document.getElementById("rcLeadChart"),{
+    type:"bar",
+    data:{labels:rcLeadByPo.map(d=>d.po),datasets:[{data:rcLeadByPo.map(d=>d.avg),backgroundColor:POS.map(p=>PO_COLORS[p]+"CC"),borderRadius:6}]},
+    options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.raw}일`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:"#374151",font:{size:11}},grid:{display:false}}}}
+  });
+}
+
+// 채용 테이블
+function renderRcTable(){
+  const stageColor={"서류":"#667eea","1차면접":"#10B981","2차면접":"#F59E0B","최종":"#EF4444"};
+  document.getElementById("rc-table").innerHTML=`
+    <thead><tr><th>PO</th><th>팀</th><th>포지션</th><th>현재 단계</th><th>리드타임</th><th>긴급</th></tr></thead>
+    <tbody>${rcPositions.map(r=>`<tr>
+      <td><span class="tag" style="background:${PO_COLORS[r.po]}22;color:${PO_COLORS[r.po]}">${r.po}</span></td>
+      <td>${r.team}</td><td style="font-weight:600">${r.position}</td>
+      <td><span class="tag" style="background:${(stageColor[r.stage]||"#667eea")}22;color:${stageColor[r.stage]||"#667eea"}">${r.stage}</span></td>
+      <td>${r.leadtime}일</td>
+      <td>${r.urgent?'<span class="tag" style="background:#FEE2E2;color:#EF4444">긴급</span>':'-'}</td>
+    </tr>`).join("")}</tbody>`;
+}
+
+// 근태 KPI
+function renderAtKpi(){
+  const totalLate=atData.reduce((s,d)=>s+d.late,0);
+  const totalAbsent=atData.reduce((s,d)=>s+d.absent,0);
+  const totalOt=atData.reduce((s,d)=>s+d.overtime,0);
+  const avgLeave=Math.round(atTeams.reduce((s,d)=>s+Number(d.leaveRate),0)/atTeams.length);
+  document.getElementById("at-kpi").innerHTML=[
+    {label:"누적 지각·조퇴",value:`${totalLate}건`,sub:"상반기",color:"orange"},
+    {label:"누적 무단결근",value:`${totalAbsent}건`,sub:"상반기",color:totalAbsent>5?"red":""},
+    {label:"평균 연차소진율",value:`${avgLeave}%`,sub:"전체 팀 평균",color:avgLeave<50?"red":""},
+    {label:"초과근무 합계",value:`${totalOt}건`,sub:"상반기",color:""},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-accent" style="background:#8B5CF6"></div><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+}
+
+// 근태 추이
+function renderAtTrend(){
+  dc("atTrend");
+  charts.atTrend=new Chart(document.getElementById("atTrendChart"),{
+    type:"line",
+    data:{labels:atData.map(d=>d.month),datasets:[
+      {label:"지각",data:atData.map(d=>d.late),borderColor:"#F59E0B",pointBackgroundColor:"#F59E0B",pointRadius:4,tension:0.3,fill:false},
+      {label:"조퇴",data:atData.map(d=>d.early),borderColor:"#667eea",pointBackgroundColor:"#667eea",pointRadius:4,tension:0.3,fill:false},
+      {label:"결근",data:atData.map(d=>d.absent),borderColor:"#EF4444",pointBackgroundColor:"#EF4444",pointRadius:4,tension:0.3,fill:false},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:"#6B7280",font:{size:11},boxWidth:12}},tooltip:{...tt}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{display:false}},y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}}}}
+  });
+}
+
+// 연차소진율
+function renderAtLeave(){
+  dc("atLeave");
+  const top8=atTeams.sort((a,b)=>a.leaveRate-b.leaveRate).slice(0,8);
+  charts.atLeave=new Chart(document.getElementById("atLeaveChart"),{
+    type:"bar",
+    data:{labels:top8.map(d=>d.team),datasets:[{data:top8.map(d=>d.leaveRate),backgroundColor:top8.map(d=>d.leaveRate<50?"#EF444488":"#10B98188"),borderRadius:4}]},
+    options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>`${c.raw}%`}}},scales:{x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor},min:0,max:100},y:{ticks:{color:"#374151",font:{size:10}},grid:{display:false}}}}
+  });
+}
+
+// 근태 테이블
+function renderAtTable(){
+  document.getElementById("at-table").innerHTML=`
+    <thead><tr><th>PO</th><th>팀</th><th>지각</th><th>조퇴</th><th>결근</th><th>연차소진율</th><th>초과근무</th></tr></thead>
+    <tbody>${atTeams.map(r=>`<tr>
+      <td><span class="tag" style="background:${PO_COLORS[r.po]}22;color:${PO_COLORS[r.po]}">${r.po}</span></td>
+      <td style="font-weight:600">${r.team}</td>
+      <td class="${r.late>2?"orange":""}">${r.late}</td>
+      <td>${r.early}</td>
+      <td class="${r.absent>1?"dn":""}">${r.absent}</td>
+      <td class="${r.leaveRate<50?"dn":""}">${r.leaveRate}%</td>
+      <td>${r.overtime}h</td>
+    </tr>`).join("")}</tbody>`;
+}
+
+// ── 탭 전환 ──────────────────────────────────────────────
+const tabTitles={headcount:"인원 현황",labor:"인건비",turnover:"입퇴사",recruit:"채용 현황",attend:"근태 이슈"};
+function switchTab(id,el){
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+  if(el)el.classList.add("active");
+}
+
+// ── 엑셀 업로드 ──────────────────────────────────────────
 function showToast(msg){const el=document.getElementById("toast");el.textContent=msg;el.style.display="block";setTimeout(()=>{el.style.display="none"},3500)}
 
 function processFile(file){
@@ -416,20 +741,7 @@ function processFile(file){
   reader.onload=e=>{
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-      const loaded=[];
-      function gs(name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws):null}
-      const hc=gs("인원현황");
-      if(hc){headcount=hc.map(r=>({month:String(r["월"]||""),total:Number(r["직원수"]||0),join:Number(r["입사"]||0),leave:Number(r["퇴사"]||0)}));loaded.push("인원현황")}
-      const dp=gs("부서현황");
-      if(dp){deptData=dp.map((r,i)=>({name:String(r["부서"]||""),value:Number(r["인원"]||0),color:COLORS[i%COLORS.length],lt:Number(r["리드타임"]||40)}));loaded.push("부서현황")}
-      const pl=gs("채용파이프라인");
-      if(pl){pipeline=pl.map(r=>({position:String(r["포지션"]||""),total:Number(r["채용목표"]||0),s1:Number(r["서류"]||0),s2:Number(r["1차면접"]||0),s3:Number(r["2차면접"]||0),s4:Number(r["최종"]||0),status:String(r["상태"]||"진행중"),urgent:String(r["긴급"]||"").toLowerCase()==="true"||r["긴급"]===1}));loaded.push("채용파이프라인")}
-      const bd=gs("인건비");
-      if(bd){budget=bd.map(r=>({month:String(r["월"]||""),budget:Number(r["예산"]||0),actual:Number(r["실적"]||0)}));loaded.push("인건비")}
-      const bk=gs("인건비항목");
-      if(bk){breakdown=bk.map((r,i)=>({label:String(r["항목"]||""),budget:Number(r["예산"]||0),actual:Number(r["실적"]||0),color:COLORS[i%COLORS.length]}));loaded.push("인건비항목")}
-      if(loaded.length===0){showToast("❌ 시트 이름을 확인해주세요")}
-      else{document.getElementById("sheet-tags").innerHTML=loaded.map(s=>`<span class="sheet-tag">✓ ${s}</span>`).join("");showToast(`✅ ${loaded.join(", ")} 반영 완료!`);renderAll()}
+      showToast("✅ 파일 업로드 완료! (연동 개발 예정)");
     }catch{showToast("❌ 파일 읽기 오류")}
   };
   reader.readAsArrayBuffer(file);
@@ -441,20 +753,14 @@ dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag")})
 dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
 dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("drag");if(e.dataTransfer.files[0])processFile(e.dataTransfer.files[0])});
 
-const titles={overview:"채용 리드타임 분석",headcount:"월별 입사자",pipeline:"채용 현황",budget:"인건비 현황",insight:"인사이트"};
-function switchTab(id,el){
-  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
-  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
-  document.getElementById("tab-"+id).classList.add("active");
-  if(el)el.classList.add("active");
-  document.getElementById("page-title").textContent=titles[id]||"";
-}
-
+// ── 전체 렌더 ────────────────────────────────────────────
 function renderAll(){
-  renderKPI();renderDeptLead();renderStage();renderTrend();renderBottleneck();
-  renderJoinLeave();renderDeptBars();renderMonthlyTable();renderPipeline();renderBudget();renderInsight();
+  renderHcKpi(); renderHcTrend(); renderHcPo(); renderHcTable();
+  renderLbKpi(); renderLbTrend(); renderLbRate(); renderLbTable();
+  renderTvKpi(); renderTvTrend(); renderTvReason(); renderTvTable();
+  renderRcKpi(); renderRcMonth(); renderRcLead(); renderRcTable();
+  renderAtKpi(); renderAtTrend(); renderAtLeave(); renderAtTable();
 }
-renderAll();
 </script>
 </body>
 </html>
